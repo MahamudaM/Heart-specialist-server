@@ -1,6 +1,7 @@
 const express =require('express')
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { query } = require('express');
 const app = express()
 const port = process.env.PORT || 5000;
 require('dotenv').config();
@@ -38,11 +39,18 @@ async function run(){
             
             res.send(services)
         })
-
+        // get review form database
+        app.get('/review',async(req,res)=>{
+            const query={}
+            const cursor = reviewCollection.find(query)
+            const review = await cursor.toArray()
+            res.send(review)
+        })
+// create review api to send database
         app.post('/review',async(req,res)=>{
             const review = req.body;
             const result = await reviewCollection.insertOne(review);
-            res.send(result)
+            res.send(result);
         })
     }
     finally{
