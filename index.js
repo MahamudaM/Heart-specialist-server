@@ -1,5 +1,6 @@
 const express =require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { query } = require('express');
 const app = express()
@@ -19,12 +20,33 @@ app.get('/',(req,res)=>{
 const uri = `mongodb+srv://${process.env.DV_USER_NAME}:${process.env.USER_PASSWORD}@cluster0.4jfewjr.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 })
-
+// jwt fun
+ function veryfiyJwt(req,res,next){
+    const authHaders = req.headers.authorization;
+    if(!authHaders){
+       return res.status(401).send({message:'not authorized'})
+    }
+    const token = authHaders.split(' ')[1];
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,function(error,decoded){
+        if(error){
+           return res.status(403).send({message:'forbidden access'})
+        }
+        req.decoded = decoded;
+        next();
+    })
+    
+ }
 async function run(){
     try{
         const serviceCollection = client.db("doctorA11").collection("services");
         const reviewCollection = client.db("doctorA11").collection("review");
         const orderServiceCollection = client.db("doctorA11").collection('orderedService')
+        app.post('/jwt',(req,res)=>{
+            const user=req.body;
+            console.log(user)
+            const token = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1d'})
+            res.send({token})
+        })
         app.get('/services',async(req,res)=>{
             const query= {}
             const cursor = serviceCollection.find(query)
@@ -60,7 +82,12 @@ app.get('/addService',async(req,res)=>{
 })
 
         // get specific user review from database
-        app.get('/review',async(req,res)=>{
+        app.get('/review',veryfiyJwt,async(req,res)=>{
+            const decoded=req.decoded;
+            console.log('inside review api',decoded)
+            if(decoded.email !==req.query.email){
+                res.status(403).send({message: 'unauthorized access'})
+            }
             let query={}
             if(req.query.email){
                  query={
@@ -144,7 +171,7 @@ app.get('/addService',async(req,res)=>{
        
     }    
 }
-run().catch(error=>consol.log(error))
+run().catch(error=>console.log(error))
 
 
 
