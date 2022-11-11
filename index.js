@@ -53,6 +53,13 @@ async function run(){
             const services=await cursor.toArray();
             res.send(services)
         })
+        // limit api
+        app.get('/service',async(req,res)=>{
+            const query= {}
+            const cursor = serviceCollection.find(query)
+            const services=await cursor.limit(3).toArray();
+            res.send(services)
+        })
         
         app.get('/services/:id',async(req,res)=>{
             const id=req.params.id
@@ -68,7 +75,19 @@ app.post('/addService',async(req,res)=>{
     res.send(result)
 })
 
-// get specific user review from database
+
+
+app.get('/addServices',async(req,res)=>{
+    const query={}
+   
+    const cursor = orderServiceCollection.find(query)
+    const orderService = await cursor.toArray()
+    res.send(orderService)
+})
+
+
+
+// limit addervice api
 app.get('/addService',async(req,res)=>{
     let query={}
     if(req.query.email){
@@ -77,8 +96,28 @@ app.get('/addService',async(req,res)=>{
          }
     }
     const cursor = orderServiceCollection.find(query)
-    const orderService = await cursor.toArray()
+    const orderService = await cursor.limit(3).toArray()
     res.send(orderService)
+})
+
+
+ // all reviews=======
+ app.get('/reviews',async(req,res)=>{
+   
+    let query={ }
+        
+     cursor = reviewCollection.find(query)
+       
+    const review = await cursor.sort({date : -1}) .toArray()
+    res.send(review)
+})
+
+// get particular review id
+app.get('/reviews/:id',async(req,res)=>{
+    const id = req.params.id;
+    const query = {_id:ObjectId(id)}
+    const result = await reviewCollection.findOne(query)
+    res.send(result);
 })
 
         // get specific user review from database
@@ -95,6 +134,8 @@ app.get('/addService',async(req,res)=>{
                  }
             }
             const cursor = reviewCollection.find(query)
+            
+
             const review = await cursor.toArray()
             res.send(review)
         })
@@ -109,14 +150,7 @@ app.get('/addService',async(req,res)=>{
 
 
 
-        // get all review by id
-        // app.get('/review/:id',async(req,res)=>{
-        //     const id=req.params.id
-        //     const query= {_id:ObjectId(id)}
-        //     const result= await reviewCollection.findOne(query)
-            
-        //     res.send(result)
-        // })
+        
 
 
 
@@ -129,43 +163,22 @@ app.get('/addService',async(req,res)=>{
         })
         // updater review
 
-        app.patch('/review/:id',async(req,res)=>{
+        app.put('/reviews/:id',async(req,res)=>{
             const id = req.params.id;
-            // const status = req.body.message
-            const query = {_id:ObjectId(id)}
-            const updatedDoc = {
-                $set:{message:req.body.message}
+            console.log(id)
+            console.log(req.body)
+            const filter= {_id:ObjectId(id)}
+            const options = { upsert: true };
+            const updatedReviw = {
+                $set:{
+                    message:req.body.message
+                 }
             }
-            const result = await reviewCollection.updateOne(query,updatedDoc)
+            
+            // console.log(updatedReviw)
+            const result = await reviewCollection.updateOne(filter,updatedReviw,options)
             res.send(result)
-        })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // app.patch('/review/:id',async(req,res)=>{
-        //     const id = req.params.id;
-        //     const status = req.body.status
-        //     const query = {_id:ObjectId(id)}
-        //     const updatedDoc = {
-        //         $set:{
-        //             status:status
-        //         }
-        //     }
-        //     const result = await reviewCollection.updateOne(query,updatedDoc)
-        //     res.send(result)
-        // })
+        })        
     }
     finally{
        
@@ -179,3 +192,5 @@ run().catch(error=>console.log(error))
 app.listen(port,()=>{
     console.log(`assignment runing port ${port}`)
 })
+
+
